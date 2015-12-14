@@ -1,6 +1,12 @@
 # HDFS Journalnode
 
-FROM f21global/hadoop-base:5.5.0
+FROM f21global/hadoop-base:2.7.1
 MAINTAINER Francis Chuang <francis.chuang@boostport.com>
 
-RUN apt-get install hadoop-hdfs-journalnode=${CDH_VER}
+RUN apt-get install hadoop-hdfs-journalnode --no-install-recommends -y
+
+ADD run-journalnode.sh /opt/hadoop/run-journalnode.sh
+
+EXPOSE 8485 8480 8481
+
+CMD ["/opt/hadoop/run-journalnode.sh"]
