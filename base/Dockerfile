@@ -11,3 +11,8 @@ RUN apt-get update \
     && gpg --keyserver pgp.mit.edu --recv-keys B9733A7A07513CAD \
     && gpg -a --export 07513CAD | apt-key add - \
     && apt-get update
+
+RUN arch="$(dpkg --print-architecture)" \
+	&& set -x \
+	&& wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/1.7/gosu-$arch" \
+	&& chmod +x /usr/local/bin/gosu

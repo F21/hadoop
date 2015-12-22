@@ -21,20 +21,6 @@ addConfig () {
      $1
 }
 
-# Create log dirs
-mkdir -p $LOG_DIR;
-chown -R hdfs:hadoop $LOG_DIR;
-chmod -R 755 $LOG_DIR;
-
-echo "HADOOP_LOG_DIR=${LOG_DIR}" >> /etc/hadoop/conf/hadoop-env.sh
-
-# Create PID dirs
-mkdir -p $PID_DIR;
-chown -R hdfs:hadoop $PID_DIR;
-chmod -R 755 $PID_DIR;
-
-echo "HADOOP_PID_DIR=${PID_DIR}" >> /etc/hadoop/conf/hadoop-env.sh
-
 # Update core-site.xml
 : ${CLUSTER_NAME:?"CLUSTER_NAME is required."}
 addConfig $CORE_SITE "fs.defaultFS" "hdfs://${CLUSTER_NAME}"
@@ -108,35 +94,37 @@ done
 if [[ (! -f $NAMENODE_FORMATTED_FLAG) && -z "$STANDBY" ]]; then
 
     echo "Formatting zookeeper"
-    sudo -u hdfs -i hdfs zkfc -formatZK
+    gosu hdfs hdfs zkfc -formatZK
 
     echo "Formatting namenode..."
-    sudo -u hdfs -i hdfs namenode -format
+    gosu hdfs hdfs namenode -format
     touch $NAMENODE_FORMATTED_FLAG
 fi
 
 # Set this namenode as standby if required
 if [ -n "$STANDBY" ]; then
     echo "Starting namenode in standby mode..."
-    sudo -u hdfs -i hdfs namenode -bootstrapStandby
+    gosu hdfs hdfs namenode -bootstrapStandby
 else
     echo "Starting namenode..."
 fi
 
-sudo -u hdfs -i /usr/hdp/current/hadoop-hdfs-namenode/../hadoop/sbin/hadoop-daemon.sh --config /etc/hadoop/conf start namenode
+trap 'kill %1; kill %2' SIGINT SIGTERM
+
+gosu hdfs hdfs --config /etc/hadoop/conf namenode &
 
 # Start the zkfc
-sudo -u hdfs -i /usr/hdp/current/hadoop-hdfs-namenode/../hadoop/sbin/hadoop-daemon.sh --config /etc/hadoop/conf start zkfc
+gosu hdfs hdfs --config /etc/hadoop/conf zkfc &
 
 # Wait for cluster to be ready
-sudo -u hdfs -i hdfs dfsadmin -safemode wait
+gosu hdfs hdfs dfsadmin -safemode wait
 
 # Create the /tmp directory if it doesn't exist
-sudo -u hdfs -i hadoop fs -test -d /tmp
+gosu hdfs hadoop fs -test -d /tmp
 
 if [ $? != 0 ]; then
-    sudo -u hdfs -i hadoop fs -mkdir /tmp
-    sudo -u hdfs -i hadoop fs -chmod -R 1777 /tmp
+    gosu hdfs hadoop fs -mkdir /tmp
+    gosu hdfs hadoop fs -chmod -R 1777 /tmp
 fi
 
 while true; do sleep 1; done

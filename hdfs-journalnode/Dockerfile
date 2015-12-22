@@ -5,8 +5,8 @@ MAINTAINER Francis Chuang <francis.chuang@boostport.com>
 
 RUN apt-get install hadoop-hdfs-journalnode --no-install-recommends -y
 
-ADD run-journalnode.sh /opt/hadoop/run-journalnode.sh
+ADD run-journalnode.sh /run-journalnode.sh
 
 EXPOSE 8485 8480 8481
 
-CMD ["/opt/hadoop/run-journalnode.sh"]
+CMD ["/run-journalnode.sh"]

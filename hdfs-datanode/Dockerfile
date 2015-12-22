@@ -5,8 +5,8 @@ MAINTAINER Francis Chuang <francis.chuang@boostport.com>
 
 RUN apt-get install hadoop-hdfs-datanode --no-install-recommends -y
 
-ADD run-datanode.sh /opt/hadoop/run-datanode.sh
+ADD run-datanode.sh /run-datanode.sh
 
 EXPOSE 50010 50075 50475 1006 50020
 
-CMD ["/opt/hadoop/run-datanode.sh"]
+CMD ["/run-datanode.sh"]

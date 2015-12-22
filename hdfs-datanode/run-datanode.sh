@@ -20,20 +20,6 @@ addConfig () {
      $1
 }
 
-# Create log dirs
-mkdir -p $LOG_DIR;
-chown -R hdfs:hadoop $LOG_DIR;
-chmod -R 755 $LOG_DIR;
-
-echo "HADOOP_LOG_DIR=${LOG_DIR}" >> /etc/hadoop/conf/hadoop-env.sh
-
-# Create PID dirs
-mkdir -p $PID_DIR;
-chown -R hdfs:hadoop $PID_DIR;
-chmod -R 755 $PID_DIR;
-
-echo "HADOOP_PID_DIR=${PID_DIR}" >> /etc/hadoop/conf/hadoop-env.sh
-
 # Update core-site.xml
 : ${CLUSTER_NAME:?"CLUSTER_NAME is required."}
 addConfig $CORE_SITE "fs.defaultFS" "hdfs://${CLUSTER_NAME}"
@@ -80,13 +66,4 @@ for i in "${DFS_DATANODE_NAME_DIRS[@]}"; do
 done
 
 # Start the datanode
-sudo -u hdfs -i /usr/hdp/current/hadoop-hdfs-datanode/../hadoop/sbin/hadoop-daemon.sh --config /etc/hadoop/conf start datanode
-
-cleanup() {
-    sudo -u hdfs -i /usr/hdp/current/hadoop-hdfs-datanode/../hadoop/sbin/hadoop-daemon.sh --config /etc/hadoop/conf stop datanode
-    exit 0
-}
-
-trap cleanup SIGINT SIGTERM
-
-while true; do sleep 1; done
+exec gosu hdfs hdfs --config /etc/hadoop/conf datanode
