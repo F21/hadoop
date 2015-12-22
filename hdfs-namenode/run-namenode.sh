@@ -2,7 +2,7 @@
 
 CORE_SITE="/etc/hadoop/conf/core-site.xml"
 HDFS_SITE="/etc/hadoop/conf/hdfs-site.xml"
-NAMENODE_FORMATTED_FLAG="/opt/hadoop/namenode-is-formatted"
+NAMENODE_FORMATTED_FLAG="/namenode-is-formatted"
 LOG_DIR="/var/log/hadoop/hdfs"
 PID_DIR="/var/run/hadoop/hdfs"
 
