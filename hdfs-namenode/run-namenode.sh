@@ -72,14 +72,6 @@ for i in "${DFS_NAMENODE_NAME_DIRS[@]}"; do
     fi
 done
 
-cleanup() {
-    sudo -u hdfs -i /usr/hdp/current/hadoop-hdfs-namenode/../hadoop/sbin/hadoop-daemon.sh --config /etc/hadoop/conf stop namenode
-    sudo -u hdfs -i /usr/hdp/current/hadoop-hdfs-namenode/../hadoop/sbin/hadoop-daemon.sh --config /etc/hadoop/conf stop zkfc
-    exit 0
-}
-
-trap cleanup SIGINT SIGTERM
-
 IFS=',' read -ra HA_ZOOKEEPER_QUORUMS <<< "$HA_ZOOKEEPER_QUORUM"
 num_zk=${#HA_ZOOKEEPER_QUORUMS[*]}
 

@@ -7,6 +7,8 @@ RUN apt-get install hadoop-hdfs-journalnode --no-install-recommends -y
 
 ADD run-journalnode.sh /run-journalnode.sh
 
+VOLUME ["/var/lib/hadoop-hdfs/journal"]
+
 EXPOSE 8485 8480 8481
 
 CMD ["/run-journalnode.sh"]
