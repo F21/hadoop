@@ -31,6 +31,7 @@ addConfig $CORE_SITE "ipc.client.connect.max.retries" 400
 
 : ${HA_ZOOKEEPER_QUORUM:?"HA_ZOOKEEPER_QUORUM is required."}
 addConfig $CORE_SITE "ha.zookeeper.quorum" $HA_ZOOKEEPER_QUORUM
+addConfig $CORE_SITE "ha.zookeeper.parent-znode" /$CLUSTER_NAME
 
 # Update hdfs-site.xml
 addConfig $HDFS_SITE "dfs.permissions.superusergroup" "hadoop"
