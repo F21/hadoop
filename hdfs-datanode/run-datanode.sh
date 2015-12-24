@@ -21,8 +21,7 @@ addConfig () {
 }
 
 # Update core-site.xml
-: ${CLUSTER_NAME:?"CLUSTER_NAME is required."}
-addConfig $CORE_SITE "fs.defaultFS" "hdfs://${CLUSTER_NAME}"
+[ ! -z "$FS_DEFAULTFS" ] && addConfig $CORE_SITE "fs.defaultFS" "hdfs://${FS_DEFAULTFS}"
 addConfig $CORE_SITE "fs.trash.interval" ${FS_TRASH_INTERVAL:=1440}
 addConfig $CORE_SITE "fs.trash.checkpoint.interval" ${FS_TRASH_CHECKPOINT_INTERVAL:=0}
 addConfig $CORE_SITE "ipc.client.connect.retry.interval" 4000
@@ -31,22 +30,34 @@ addConfig $CORE_SITE "ipc.client.connect.max.retries" 100
 # Update hdfs-site.xml
 addConfig $HDFS_SITE "dfs.permissions.superusergroup" "hadoop"
 addConfig $HDFS_SITE "dfs.datanode.max.transfer.threads" 4096
-addConfig $HDFS_SITE "dfs.nameservices" $CLUSTER_NAME
-addConfig $HDFS_SITE "dfs.ha.namenodes.${CLUSTER_NAME}" "nn1,nn2"
 
-: ${DFS_NAMENODE_RPC_ADDRESS_NN1:?"DFS_NAMENODE_RPC_ADDRESS_NN1 is required."}
-addConfig $HDFS_SITE "dfs.namenode.rpc-address.${CLUSTER_NAME}.nn1" $DFS_NAMENODE_RPC_ADDRESS_NN1
+: ${DFS_NAMESERVICES:?"DFS_NAMESERVICES is required."}
+addConfig $HDFS_SITE "dfs.nameservices" $DFS_NAMESERVICES
 
-: ${DFS_NAMENODE_RPC_ADDRESS_NN2:?"DFS_NAMENODE_RPC_ADDRESS_NN2 is required."}
-addConfig $HDFS_SITE "dfs.namenode.rpc-address.${CLUSTER_NAME}.nn2" $DFS_NAMENODE_RPC_ADDRESS_NN2
+# Create namenodes config
+IFS=',' read -ra DFS_NAMESERVICE <<< "$DFS_NAMESERVICES"
+for i in "${DFS_NAMESERVICE[@]}"; do
 
-: ${DFS_NAMENODE_HTTP_ADDRESS_NN1:?"DFS_NAMENODE_HTTP_ADDRESS_NN1 is required."}
-addConfig $HDFS_SITE "dfs.namenode.http-address.${CLUSTER_NAME}.nn1" $DFS_NAMENODE_HTTP_ADDRESS_NN1
+    addConfig $HDFS_SITE "dfs.ha.namenodes.${i}" "nn1,nn2"
 
-: ${DFS_NAMENODE_HTTP_ADDRESS_NN2:?"DFS_NAMENODE_HTTP_ADDRESS_NN2 is required."}
-addConfig $HDFS_SITE "dfs.namenode.http-address.${CLUSTER_NAME}.nn2" $DFS_NAMENODE_HTTP_ADDRESS_NN2
+    VAR=${i^^}_DFS_NAMENODE_RPC_ADDRESS_NN1
+    : ${!VAR:?"${VAR} is required."}
+    addConfig $HDFS_SITE "dfs.namenode.rpc-address.${i}.nn1" ${!VAR}
 
-addConfig $HDFS_SITE "dfs.client.failover.proxy.provider.${CLUSTER_NAME}" "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider"
+    VAR=${i^^}_DFS_NAMENODE_RPC_ADDRESS_NN2
+    : ${!VAR:?"${VAR} is required."}
+    addConfig $HDFS_SITE "dfs.namenode.rpc-address.${i}.nn2" ${!VAR}
+
+    VAR=${i^^}_DFS_NAMENODE_HTTP_ADDRESS_NN1
+    : ${!VAR:?"${VAR} is required."}
+    addConfig $HDFS_SITE "dfs.namenode.http-address.${i}.nn1" ${!VAR}
+
+    VAR=${i^^}_DFS_NAMENODE_HTTP_ADDRESS_NN2
+    : ${!VAR:?"${VAR} is required."}
+    addConfig $HDFS_SITE "dfs.namenode.http-address.${i}.nn2" ${!VAR}
+
+    addConfig $HDFS_SITE "dfs.client.failover.proxy.provider.${i}" "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider"
+done
 
 addConfig $HDFS_SITE "dfs.datanode.name.dir" ${DFS_DATANODE_NAME_DIR:="file:///var/lib/hadoop-hdfs/data"}
 [ ! -z "$DFS_DATANODE_FSDATASET_VOLUME_CHOOSING_POLICY" ] && addConfig $HDFS_SITE "dfs.datanode.fsdataset.volume.choosing.policy" "org.apache.hadoop.hdfs.server.datanode.fsdataset.AvailableSpaceVolumeChoosingPolicy"

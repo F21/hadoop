@@ -21,8 +21,6 @@ addConfig () {
 }
 
 # Update core-site.xml
-: ${CLUSTER_NAME:?"CLUSTER_NAME is required."}
-addConfig $CORE_SITE "fs.defaultFS" "hdfs://${CLUSTER_NAME}"
 addConfig $CORE_SITE "ipc.client.connect.retry.interval" 4000
 addConfig $CORE_SITE "ipc.client.connect.max.retries" 100
 

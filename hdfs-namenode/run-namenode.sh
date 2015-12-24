@@ -23,7 +23,8 @@ addConfig () {
 
 # Update core-site.xml
 : ${CLUSTER_NAME:?"CLUSTER_NAME is required."}
-addConfig $CORE_SITE "fs.defaultFS" "hdfs://${CLUSTER_NAME}"
+: $DFS_NAMESERVICE_ID:?"DFS_NAMESERVICE_ID is required."}
+addConfig $CORE_SITE "fs.defaultFS" "hdfs://${DFS_NAMESERVICE_ID}"
 addConfig $CORE_SITE "fs.trash.interval" ${FS_TRASH_INTERVAL:=1440}
 addConfig $CORE_SITE "fs.trash.checkpoint.interval" ${FS_TRASH_CHECKPOINT_INTERVAL:=0}
 addConfig $CORE_SITE "ipc.client.connect.retry.interval" 6000
@@ -35,27 +36,27 @@ addConfig $CORE_SITE "ha.zookeeper.parent-znode" /$CLUSTER_NAME
 
 # Update hdfs-site.xml
 addConfig $HDFS_SITE "dfs.permissions.superusergroup" "hadoop"
-addConfig $HDFS_SITE "dfs.nameservices" $CLUSTER_NAME
-addConfig $HDFS_SITE "dfs.ha.namenodes.${CLUSTER_NAME}" "nn1,nn2"
+addConfig $HDFS_SITE "dfs.nameservices" $DFS_NAMESERVICE_ID
+addConfig $HDFS_SITE "dfs.ha.namenodes.${DFS_NAMESERVICE_ID}" "nn1,nn2"
 
 : ${DFS_NAMENODE_RPC_ADDRESS_NN1:?"DFS_NAMENODE_RPC_ADDRESS_NN1 is required."}
-addConfig $HDFS_SITE "dfs.namenode.rpc-address.${CLUSTER_NAME}.nn1" $DFS_NAMENODE_RPC_ADDRESS_NN1
+addConfig $HDFS_SITE "dfs.namenode.rpc-address.${DFS_NAMESERVICE_ID}.nn1" $DFS_NAMENODE_RPC_ADDRESS_NN1
 
 : ${DFS_NAMENODE_RPC_ADDRESS_NN2:?"DFS_NAMENODE_RPC_ADDRESS_NN2 is required."}
-addConfig $HDFS_SITE "dfs.namenode.rpc-address.${CLUSTER_NAME}.nn2" $DFS_NAMENODE_RPC_ADDRESS_NN2
+addConfig $HDFS_SITE "dfs.namenode.rpc-address.${DFS_NAMESERVICE_ID}.nn2" $DFS_NAMENODE_RPC_ADDRESS_NN2
 
 : ${DFS_NAMENODE_HTTP_ADDRESS_NN1:?"DFS_NAMENODE_HTTP_ADDRESS_NN1 is required."}
-addConfig $HDFS_SITE "dfs.namenode.http-address.${CLUSTER_NAME}.nn1" $DFS_NAMENODE_HTTP_ADDRESS_NN1
+addConfig $HDFS_SITE "dfs.namenode.http-address.${DFS_NAMESERVICE_ID}.nn1" $DFS_NAMENODE_HTTP_ADDRESS_NN1
 
 : ${DFS_NAMENODE_HTTP_ADDRESS_NN2:?"DFS_NAMENODE_HTTP_ADDRESS_NN2 is required."}
-addConfig $HDFS_SITE "dfs.namenode.http-address.${CLUSTER_NAME}.nn2" $DFS_NAMENODE_HTTP_ADDRESS_NN2
+addConfig $HDFS_SITE "dfs.namenode.http-address.${DFS_NAMESERVICE_ID}.nn2" $DFS_NAMENODE_HTTP_ADDRESS_NN2
 
-addConfig $HDFS_SITE "dfs.client.failover.proxy.provider.${CLUSTER_NAME}" "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider"
+addConfig $HDFS_SITE "dfs.client.failover.proxy.provider.${DFS_NAMESERVICE_ID}" "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider"
 addConfig $HDFS_SITE "dfs.namenode.name.dir" ${DFS_NAMENODE_NAME_DIR:="file:///var/lib/hadoop-hdfs/cache/hdfs/dfs/name"}
 
 : ${DFS_NAMENODE_SHARED_EDITS_DIR:?"DFS_NAMENODE_SHARED_EDITS_DIR is required."}
 DFS_NAMENODE_SHARED_EDITS_DIR=${DFS_NAMENODE_SHARED_EDITS_DIR//","/";"}
-addConfig $HDFS_SITE "dfs.namenode.shared.edits.dir" "qjournal://${DFS_NAMENODE_SHARED_EDITS_DIR}/${CLUSTER_NAME}"
+addConfig $HDFS_SITE "dfs.namenode.shared.edits.dir" "qjournal://${DFS_NAMENODE_SHARED_EDITS_DIR}/${DFS_NAMESERVICE_ID}"
 
 addConfig $HDFS_SITE "dfs.ha.fencing.methods" "shell(/bin/true)"
 
@@ -84,14 +85,16 @@ until $(nc -z -v -w5 ${REMOTE_ADDR[0]} ${REMOTE_ADDR[1]}); do
 done
 
 # Format namenode
-if [[ (! -f $NAMENODE_FORMATTED_FLAG) && -z "$STANDBY" ]]; then
+if [ -z "$STANDBY" ]; then
 
     echo "Formatting zookeeper"
-    gosu hdfs hdfs zkfc -formatZK
+    gosu hdfs hdfs zkfc -formatZK -nonInteractive
 
-    echo "Formatting namenode..."
-    gosu hdfs hdfs namenode -format
-    touch $NAMENODE_FORMATTED_FLAG
+    if [ ! -f $NAMENODE_FORMATTED_FLAG ]; then
+        echo "Formatting namenode..."
+        gosu hdfs hdfs namenode -format -clusterId $CLUSTER_NAME
+        touch $NAMENODE_FORMATTED_FLAG
+    fi
 fi
 
 # Set this namenode as standby if required
