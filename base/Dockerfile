@@ -1,7 +1,7 @@
 FROM f21global/java:8
 MAINTAINER Francis Chuang <francis.chuang@boostport.com>
 
-ENV HDP_VER 2.4.0.0
+ENV HDP_VER 2.4.2.0
 
 RUN apt-get update \
     && apt-get install -y ca-certificates xmlstarlet wget \
