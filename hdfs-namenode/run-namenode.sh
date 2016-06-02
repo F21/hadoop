@@ -92,7 +92,7 @@ if [ -z "$STANDBY" ]; then
 
     if [ ! -f $NAMENODE_FORMATTED_FLAG ]; then
         echo "Formatting namenode..."
-        gosu hdfs hdfs namenode -format -clusterId $CLUSTER_NAME
+        gosu hdfs hdfs namenode -format -nonInteractive -clusterId $CLUSTER_NAME
         touch $NAMENODE_FORMATTED_FLAG
     fi
 fi
