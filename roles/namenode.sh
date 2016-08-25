@@ -1,25 +1,6 @@
 #!/usr/bin/env bash
 
-CORE_SITE="/etc/hadoop/conf/core-site.xml"
-HDFS_SITE="/etc/hadoop/conf/hdfs-site.xml"
-NAMENODE_FORMATTED_FLAG="/namenode-is-formatted"
-LOG_DIR="/var/log/hadoop/hdfs"
-PID_DIR="/var/run/hadoop/hdfs"
-
-addConfig () {
-
-    if [ $# -ne 3 ]; then
-        echo "There should be 3 arguments to addConfig: <file-to-modify.xml>, <property>, <value>"
-        echo "Given: $@"
-        exit 1
-    fi
-
-    xmlstarlet ed -L -s "/configuration" -t elem -n propertyTMP -v "" \
-     -s "/configuration/propertyTMP" -t elem -n name -v $2 \
-     -s "/configuration/propertyTMP" -t elem -n value -v $3 \
-     -r "/configuration/propertyTMP" -v "property" \
-     $1
-}
+NAMENODE_FORMATTED_FLAG="/var/lib/hadoop/namenode-is-formatted"
 
 # Update core-site.xml
 : ${CLUSTER_NAME:?"CLUSTER_NAME is required."}
@@ -52,7 +33,7 @@ addConfig $HDFS_SITE "dfs.namenode.http-address.${DFS_NAMESERVICE_ID}.nn1" $DFS_
 addConfig $HDFS_SITE "dfs.namenode.http-address.${DFS_NAMESERVICE_ID}.nn2" $DFS_NAMENODE_HTTP_ADDRESS_NN2
 
 addConfig $HDFS_SITE "dfs.client.failover.proxy.provider.${DFS_NAMESERVICE_ID}" "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider"
-addConfig $HDFS_SITE "dfs.namenode.name.dir" ${DFS_NAMENODE_NAME_DIR:="file:///var/lib/hadoop-hdfs/cache/hdfs/dfs/name"}
+addConfig $HDFS_SITE "dfs.namenode.name.dir" ${DFS_NAMENODE_NAME_DIR:="file:///var/lib/hadoop/name"}
 
 : ${DFS_NAMENODE_SHARED_EDITS_DIR:?"DFS_NAMENODE_SHARED_EDITS_DIR is required."}
 DFS_NAMENODE_SHARED_EDITS_DIR=${DFS_NAMENODE_SHARED_EDITS_DIR//","/";"}
@@ -69,8 +50,8 @@ for i in "${DFS_NAMENODE_NAME_DIRS[@]}"; do
     if [[ $i == "file:///"* ]]; then
         path=${i/"file://"/""}
         mkdir -p $path
-        chown -R hdfs:hdfs $path
         chmod 700 $path
+        chown -R hadoop:hadoop $path
     fi
 done
 
@@ -88,39 +69,39 @@ done
 if [ -z "$STANDBY" ]; then
 
     echo "Formatting zookeeper"
-    gosu hdfs hdfs zkfc -formatZK -nonInteractive
+    su-exec hadoop $HADOOP_PREFIX/bin/hdfs zkfc -formatZK -nonInteractive
 
     if [ ! -f $NAMENODE_FORMATTED_FLAG ]; then
         echo "Formatting namenode..."
-        gosu hdfs hdfs namenode -format -nonInteractive -clusterId $CLUSTER_NAME
-        touch $NAMENODE_FORMATTED_FLAG
+        su-exec hadoop $HADOOP_PREFIX/bin/hdfs namenode -format -nonInteractive -clusterId $CLUSTER_NAME
+        su-exec hadoop touch $NAMENODE_FORMATTED_FLAG
     fi
 fi
 
 # Set this namenode as standby if required
 if [ -n "$STANDBY" ]; then
     echo "Starting namenode in standby mode..."
-    gosu hdfs hdfs namenode -bootstrapStandby
+    su-exec hadoop $HADOOP_PREFIX/bin/hdfs namenode -bootstrapStandby
 else
     echo "Starting namenode..."
 fi
 
 trap 'kill %1; kill %2' SIGINT SIGTERM
 
-gosu hdfs hdfs --config /etc/hadoop/conf namenode &
+su-exec hadoop $HADOOP_PREFIX/bin/hdfs --config $HADOOP_CONF_DIR namenode &
 
 # Start the zkfc
-gosu hdfs hdfs --config /etc/hadoop/conf zkfc &
+su-exec hadoop $HADOOP_PREFIX/bin/hdfs --config $HADOOP_CONF_DIR zkfc &
 
 # Wait for cluster to be ready
-gosu hdfs hdfs dfsadmin -safemode wait
+su-exec hadoop $HADOOP_PREFIX/bin/hdfs dfsadmin -safemode wait
 
 # Create the /tmp directory if it doesn't exist
-gosu hdfs hadoop fs -test -d /tmp
+su-exec hadoop $HADOOP_PREFIX/bin/hadoop fs -test -d /tmp
 
-if [ $? != 0 ]; then
-    gosu hdfs hadoop fs -mkdir /tmp
-    gosu hdfs hadoop fs -chmod -R 1777 /tmp
+if [ $? != 0 ] && [ -z "$STANDBY" ]; then
+    su-exec hadoop $HADOOP_PREFIX/bin/hadoop fs -mkdir /tmp
+    su-exec hadoop $HADOOP_PREFIX/bin/hadoop fs -chmod -R 1777 /tmp
 fi
 
 while true; do sleep 1; done

@@ -1,25 +1,5 @@
 #!/usr/bin/env bash
 
-CORE_SITE="/etc/hadoop/conf/core-site.xml"
-HDFS_SITE="/etc/hadoop/conf/hdfs-site.xml"
-LOG_DIR="/var/log/hadoop/hdfs"
-PID_DIR="/var/run/hadoop/hdfs"
-
-addConfig () {
-
-    if [ $# -ne 3 ]; then
-        echo "There should be 3 arguments to addConfig: <file-to-modify.xml>, <property>, <value>"
-        echo "Given: $@"
-        exit 1
-    fi
-
-    xmlstarlet ed -L -s "/configuration" -t elem -n propertyTMP -v "" \
-     -s "/configuration/propertyTMP" -t elem -n name -v $2 \
-     -s "/configuration/propertyTMP" -t elem -n value -v $3 \
-     -r "/configuration/propertyTMP" -v "property" \
-     $1
-}
-
 # Update core-site.xml
 [ ! -z "$FS_DEFAULTFS" ] && addConfig $CORE_SITE "fs.defaultFS" "hdfs://${FS_DEFAULTFS}"
 addConfig $CORE_SITE "fs.trash.interval" ${FS_TRASH_INTERVAL:=1440}
@@ -59,7 +39,7 @@ for i in "${DFS_NAMESERVICE[@]}"; do
     addConfig $HDFS_SITE "dfs.client.failover.proxy.provider.${i}" "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider"
 done
 
-addConfig $HDFS_SITE "dfs.datanode.name.dir" ${DFS_DATANODE_NAME_DIR:="file:///var/lib/hadoop-hdfs/data"}
+addConfig $HDFS_SITE "dfs.datanode.name.dir" ${DFS_DATANODE_NAME_DIR:="file:///var/lib/hadoop/data"}
 [ ! -z "$DFS_DATANODE_FSDATASET_VOLUME_CHOOSING_POLICY" ] && addConfig $HDFS_SITE "dfs.datanode.fsdataset.volume.choosing.policy" "org.apache.hadoop.hdfs.server.datanode.fsdataset.AvailableSpaceVolumeChoosingPolicy"
 [ ! -z "$DFS_DATANODE_AVAILABLE_SPACE_VOLUME_CHOOSING_POLICY_BALANCED_SPACE_THRESHOLD" ] && addConfig $HDFS_SITE "dfs.datanode.available-space-volume-choosing-policy.balanced-space-threshold" $DFS_DATANODE_AVAILABLE_SPACE_VOLUME_CHOOSING_POLICY_BALANCED_SPACE_THRESHOLD
 [ ! -z "$DFS_DATANODE_AVAILABLE_SPACE_VOLUME_CHOOSING_POLICY_BALANCED_SPACE_PREFRENCE_FRACTION" ] && addConfig $HDFS_SITE "dfs.datanode.available-space-volume-choosing-policy.balanced-space-preference-fraction" $DFS_DATANODE_AVAILABLE_SPACE_VOLUME_CHOOSING_POLICY_BALANCED_SPACE_PREFRENCE_FRACTION
@@ -70,11 +50,11 @@ for i in "${DFS_DATANODE_NAME_DIRS[@]}"; do
 
     if [[ $i == "file:///"* ]]; then
         path=${i/"file://"/""}
-        mkdir -p $path
-        chown -R hdfs:hdfs $path
-        chmod 700 $path
+        hadoop mkdir -p $path
+        hadoop chmod 700 $path
+        chown -R hadoop:hadoop $path
     fi
 done
 
 # Start the datanode
-exec gosu hdfs hdfs --config /etc/hadoop/conf datanode
+exec su-exec hadoop $HADOOP_PREFIX/bin/hdfs --config $HADOOP_CONF_DIR datanode
