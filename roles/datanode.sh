@@ -50,8 +50,8 @@ for i in "${DFS_DATANODE_NAME_DIRS[@]}"; do
 
     if [[ $i == "file:///"* ]]; then
         path=${i/"file://"/""}
-        hadoop mkdir -p $path
-        hadoop chmod 700 $path
+        mkdir -p $path
+        chmod 700 $path
         chown -R hadoop:hadoop $path
     fi
 done
