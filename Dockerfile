@@ -1,7 +1,7 @@
 FROM openjdk:8-jdk-alpine
 MAINTAINER Francis Chuang <francis.chuang@boostport.com>
 
-ENV HADOOP_VER=2.7.4 HADOOP_PREFIX=/opt/hadoop
+ENV HADOOP_VER=2.8.2 HADOOP_PREFIX=/opt/hadoop
 
 RUN apk --no-cache --update add bash ca-certificates gnupg openssl su-exec tar \
  && apk --no-cache --update --repository https://dl-3.alpinelinux.org/alpine/edge/community/ add xmlstarlet \

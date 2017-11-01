@@ -10,7 +10,7 @@ services:
       - 2181
 
   jn1:
-    image: f21global/hadoop:2.7.3
+    image: f21global/hadoop:2.8.2
     container_name: jn1
     hostname: jn1
     environment:
@@ -20,7 +20,7 @@ services:
       - "8480:8480"
 
   jn2:
-    image: f21global/hadoop:2.7.3
+    image: f21global/hadoop:2.8.2
     container_name: jn2
     hostname: jn2
     environment:
@@ -30,7 +30,7 @@ services:
       - "8481:8480"
 
   jn3:
-    image: f21global/hadoop:2.7.3
+    image: f21global/hadoop:2.8.2
     container_name: jn3
     hostname: jn3
     environment:
@@ -40,7 +40,7 @@ services:
       - "8482:8480"
 
   nn1:
-    image: f21global/hadoop:2.7.3
+    image: f21global/hadoop:2.8.2
     container_name: nn1
     hostname: nn1
     environment:
@@ -57,7 +57,7 @@ services:
       - "50070:50070"
 
   nn2:
-    image: f21global/hadoop:2.7.3
+    image: f21global/hadoop:2.8.2
     container_name: nn2
     hostname: nn2
     environment:
@@ -75,7 +75,7 @@ services:
       - "50071:50070"
 
   dn1:
-    image: f21global/hadoop:2.7.3
+    image: f21global/hadoop:2.8.2
     container_name: dn1
     hostname: dn1
     environment:
@@ -89,7 +89,7 @@ services:
       - "50075:50075"
 
   dn2:
-    image: f21global/hadoop:2.7.3
+    image: f21global/hadoop:2.8.2
     container_name: dn2
     hostname: dn2
     environment:
@@ -103,7 +103,7 @@ services:
       - "50076:50075"
 
   dn3:
-    image: f21global/hadoop:2.7.3
+    image: f21global/hadoop:2.8.2
     container_name: dn3
     hostname: dn3
     environment:
